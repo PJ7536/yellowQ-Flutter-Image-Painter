@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter/services.dart';
+import 'package:reflexis_ui/reflexis_ui.dart';
+import 'package:image_editor_plus/image_editor_plus.dart';
 
 import '_image_painter.dart';
 import '_signature_painter.dart';
@@ -416,6 +419,7 @@ class ImagePainterState extends State<ImagePainter> {
 
   int _strokeMultiplier = 1;
   late TextDelegate textDelegate;
+
   @override
   void initState() {
     super.initState();
@@ -426,7 +430,7 @@ class ImagePainterState extends State<ImagePainter> {
         mode: PaintMode.freeStyle,
         color: Colors.black,
       );
-      _controller.setRect(Size(widget.width!, widget.height!));
+      _controller.setRect(Size(widget.width!, widget.height!), true);
     }
     _resolveAndConvertImage();
     _textController = TextEditingController();
@@ -445,8 +449,7 @@ class ImagePainterState extends State<ImagePainter> {
 
   bool get isEdited => _controller.paintHistory.isNotEmpty;
 
-  Size get imageSize =>
-      Size(_image?.width.toDouble() ?? 0, _image?.height.toDouble() ?? 0);
+  Size get imageSize => Size(_image?.width.toDouble() ?? 0, _image?.height.toDouble() ?? 0);
 
   ///Converts the incoming image type from constructor to [ui.Image]
   Future<void> _resolveAndConvertImage() async {
@@ -512,8 +515,7 @@ class ImagePainterState extends State<ImagePainter> {
   Future<ui.Image> _loadNetworkImage(String path) async {
     final completer = Completer<ImageInfo>();
     final img = NetworkImage(path);
-    img.resolve(const ImageConfiguration()).addListener(
-        ImageStreamListener((info, _) => completer.complete(info)));
+    img.resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, _) => completer.complete(info)));
     final imageInfo = await completer.future;
     _isLoaded.value = true;
     return imageInfo.image;
@@ -626,13 +628,17 @@ class ImagePainterState extends State<ImagePainter> {
                 IconButton(
                   tooltip: textDelegate.undo,
                   icon: widget.undoIcon ??
-                      Icon(Icons.reply, color: Colors.grey[700]),
+                      Icon(
+                        Icons.reply,
+                      ),
                   onPressed: () => _controller.undo(),
                 ),
                 IconButton(
                   tooltip: textDelegate.clearAllProgress,
                   icon: widget.clearAllIcon ??
-                      Icon(Icons.clear, color: Colors.grey[700]),
+                      Icon(
+                        Icons.clear,
+                      ),
                   onPressed: () => _controller.clear(),
                 ),
               ],
@@ -643,8 +649,7 @@ class ImagePainterState extends State<ImagePainter> {
   }
 
   _scaleStartGesture(ScaleStartDetails onStart) {
-    final _zoomAdjustedOffset =
-        _transformationController.toScene(onStart.localFocalPoint);
+    final _zoomAdjustedOffset = _transformationController.toScene(onStart.localFocalPoint);
     if (!widget.isSignature) {
       _controller.setStart(_zoomAdjustedOffset);
       _controller.addOffsets(_zoomAdjustedOffset);
@@ -653,8 +658,7 @@ class ImagePainterState extends State<ImagePainter> {
 
   ///Fires while user is interacting with the screen to record painting.
   void _scaleUpdateGesture(ScaleUpdateDetails onUpdate) {
-    final _zoomAdjustedOffset =
-        _transformationController.toScene(onUpdate.localFocalPoint);
+    final _zoomAdjustedOffset = _transformationController.toScene(onUpdate.localFocalPoint);
     _controller.setInProgress(true);
     if (_controller.start == null) {
       _controller.setStart(_zoomAdjustedOffset);
@@ -664,24 +668,18 @@ class ImagePainterState extends State<ImagePainter> {
       _controller.addOffsets(_zoomAdjustedOffset);
     }
     if (_controller.onTextUpdateMode) {
-      _controller.paintHistory
-          .lastWhere((element) => element.mode == PaintMode.text)
-          .offsets = [_zoomAdjustedOffset];
+      _controller.paintHistory.lastWhere((element) => element.mode == PaintMode.text).offsets = [_zoomAdjustedOffset];
     }
   }
 
   ///Fires when user stops interacting with the screen.
   void _scaleEndGesture(ScaleEndDetails onEnd) {
     _controller.setInProgress(false);
-    if (_controller.start != null &&
-        _controller.end != null &&
-        (_controller.mode == PaintMode.freeStyle)) {
+    if (_controller.start != null && _controller.end != null && (_controller.mode == PaintMode.freeStyle)) {
       _controller.addOffsets(null);
       _addFreeStylePoints();
       _controller.offsets.clear();
-    } else if (_controller.start != null &&
-        _controller.end != null &&
-        _controller.mode != PaintMode.text) {
+    } else if (_controller.start != null && _controller.end != null && _controller.mode != PaintMode.text) {
       _addEndPoints();
     }
     _controller.resetStartAndEnd();
@@ -823,104 +821,138 @@ class ImagePainterState extends State<ImagePainter> {
 
   Widget _buildControls() {
     return Container(
+      height: 50,
       padding: const EdgeInsets.all(4),
-      color: widget.controlsBackgroundColor ?? Colors.grey[200],
-      child: Row(
-        children: [
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (_, __) {
-              final icon = paintModes(textDelegate)
-                  .firstWhere((item) => item.mode == _controller.mode)
-                  .icon;
-              return PopupMenuButton(
-                tooltip: textDelegate.changeMode,
-                shape: ContinuousRectangleBorder(
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                surfaceTintColor: Colors.transparent,
-                icon: Icon(icon, color: widget.optionColor ?? Colors.grey[700]),
-                itemBuilder: (_) => [_showOptionsRow()],
-              );
-            },
-          ),
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (_, __) {
-              return PopupMenuButton(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: ContinuousRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                surfaceTintColor: Colors.transparent,
-                tooltip: textDelegate.changeColor,
-                icon: widget.colorIcon ??
-                    Container(
-                      padding: const EdgeInsets.all(2.0),
-                      height: 24,
-                      width: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey),
-                        color: _controller.color,
-                      ),
-                    ),
-                itemBuilder: (_) => [_showColorPicker()],
-              );
-            },
-          ),
-          PopupMenuButton(
-            tooltip: textDelegate.changeBrushSize,
-            surfaceTintColor: Colors.transparent,
-            shape: ContinuousRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            icon:
-                widget.brushIcon ?? Icon(Icons.brush, color: Colors.grey[700]),
-            itemBuilder: (_) => [_showRangeSlider()],
-          ),
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (_, __) {
-              if (_controller.canFill()) {
-                return Row(
-                  children: [
-                    Checkbox.adaptive(
-                      value: _controller.shouldFill,
-                      onChanged: (val) {
-                        _controller.update(fill: val);
-                      },
-                    ),
-                    Text(
-                      textDelegate.fill,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    )
-                  ],
+      // color: widget.controlsBackgroundColor ?? Colors.grey[200],
+      child: Expanded(
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (_, __) {
+                final icon = paintModes(textDelegate).firstWhere((item) => item.mode == _controller.mode).icon;
+                return PopupMenuButton(
+                  tooltip: textDelegate.changeMode,
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  surfaceTintColor: Colors.transparent,
+                  icon: Icon(icon),
+                  itemBuilder: (_) => [_showOptionsRow()],
                 );
-              } else {
-                return const SizedBox();
-              }
-            },
-          ),
-          const Spacer(),
-          IconButton(
-            tooltip: textDelegate.undo,
-            icon: widget.undoIcon ?? Icon(Icons.reply, color: Colors.grey[700]),
-            onPressed: () {
-              widget.onUndo?.call();
-              _controller.undo();
-            },
-          ),
-          IconButton(
-            tooltip: textDelegate.clearAllProgress,
-            icon: widget.clearAllIcon ??
-                Icon(Icons.clear, color: Colors.grey[700]),
-            onPressed: () {
-              widget.onClear?.call();
-              _controller.clear();
-            },
-          ),
-        ],
+              },
+            ),
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (_, __) {
+                return PopupMenuButton(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  surfaceTintColor: Colors.transparent,
+                  tooltip: textDelegate.changeColor,
+                  icon: widget.colorIcon ??
+                      Container(
+                        padding: const EdgeInsets.all(2.0),
+                        height: 24,
+                        width: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey),
+                          color: _controller.color,
+                        ),
+                      ),
+                  itemBuilder: (_) => [_showColorPicker()],
+                );
+              },
+            ),
+            PopupMenuButton(
+              tooltip: textDelegate.changeBrushSize,
+              surfaceTintColor: Colors.transparent,
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              icon: widget.brushIcon ?? const Icon(Icons.brush),
+              itemBuilder: (_) => [_showRangeSlider()],
+            ),
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (_, __) {
+                if (_controller.canFill()) {
+                  return Row(
+                    children: [
+                      Checkbox.adaptive(
+                        value: _controller.shouldFill,
+                        onChanged: (val) {
+                          _controller.update(fill: val);
+                        },
+                      ),
+                      Text(
+                        textDelegate.fill,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
+                    ],
+                  );
+                } else {
+                  return const SizedBox();
+                }
+              },
+            ),
+            IconButton(
+              onPressed: () => _controller.flipImage(),
+              icon: const Icon(Icons.flip),
+            ),
+            IconButton(
+              onPressed: () {
+                _controller.rotateImage(pi / 2);
+              },
+              icon: const Icon(Icons.rotate_90_degrees_cw_outlined),
+            ),
+            IconButton(
+              onPressed: () {
+                _controller.exportImage().then((value) {
+                  if (value != null) {
+                    Navigator.of(context)
+                        .push(
+                          ZdsFadePageRouteBuilder(
+                            builder: (p0) => ImageCropper(
+                              image: value,
+                            ),
+                          ),
+                        ).then(
+                          (croppedImage) => _convertImage(croppedImage).then(
+                            (value) => _controller.setImage(value),
+                          ),
+                        );
+                  }
+                });
+              },
+              icon: const Icon(Icons.crop),
+            ),
+            const Spacer(),
+            IconButton(
+              tooltip: textDelegate.undo,
+              icon: widget.undoIcon ?? const Icon(ZdsIcons.edit_undo),
+              onPressed: () {
+                widget.onUndo?.call();
+                _controller.undo();
+              },
+            ),
+            IconButton(
+              tooltip: textDelegate.clearAllProgress,
+              icon: widget.clearAllIcon ??
+                  const Icon(
+                    ZdsIcons.close,
+                  ),
+              onPressed: () {
+                widget.onClear?.call();
+                _controller.clear();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

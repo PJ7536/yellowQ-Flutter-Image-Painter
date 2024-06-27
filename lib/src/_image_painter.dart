@@ -22,7 +22,21 @@ class DrawImage extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    ///paints [ui.Image] on the canvas for reference to draw over it.
+    ///Draws all the completed actions of painting on the canvas.
+    canvas.save();
+    ///Rotate
+    canvas.translate(_controller.rotateOffset.dx, _controller.rotateOffset.dy);
+    canvas.rotate(_controller.rotation);
+    canvas.translate(-_controller.rotateOffset.dx, -_controller.rotateOffset.dy);
+    ///Flip
+    if (_controller.flipHorizontal || !_controller.flipHorizontal) {
+      final double scaleX = _controller.flipHorizontal ? -1.0 : 1.0;
+      const  double scaleY = 1.0;
+      canvas.scale(scaleX, scaleY);
+      if (_controller.flipHorizontal) {
+        canvas.translate(-size.width, 0);
+      }
+    }
     paintImage(
       canvas: canvas,
       image: _controller.image!,
@@ -32,7 +46,7 @@ class DrawImage extends CustomPainter {
         Offset(size.width, size.height),
       ),
     );
-
+    // canvas.restore();
     ///paints all the previoud paintInfo history recorded on [PaintHistory]
     for (final item in _controller.paintHistory) {
       final _offset = item.offsets;
@@ -47,9 +61,7 @@ class DrawImage extends CustomPainter {
         case PaintMode.circle:
           final path = Path();
           path.addOval(
-            Rect.fromCircle(
-                center: _offset[1]!,
-                radius: (_offset[0]! - _offset[1]!).distance),
+            Rect.fromCircle(center: _offset[1]!, radius: (_offset[0]! - _offset[1]!).distance),
           );
           canvas.drawPath(path, _painter);
           break;
@@ -70,8 +82,7 @@ class DrawImage extends CustomPainter {
                 ..lineTo(_offset[i + 1]!.dx, _offset[i + 1]!.dy);
               canvas.drawPath(_path, _painter..strokeCap = StrokeCap.round);
             } else if (_offset[i] != null && _offset[i + 1] == null) {
-              canvas.drawPoints(PointMode.points, [_offset[i]!],
-                  _painter..strokeCap = StrokeCap.round);
+              canvas.drawPoints(PointMode.points, [_offset[i]!], _painter..strokeCap = StrokeCap.round);
             }
           }
           break;
@@ -91,10 +102,8 @@ class DrawImage extends CustomPainter {
           );
           textPainter.layout(minWidth: 0, maxWidth: size.width);
           final textOffset = _offset.isEmpty
-              ? Offset(size.width / 2 - textPainter.width / 2,
-                  size.height / 2 - textPainter.height / 2)
-              : Offset(_offset[0]!.dx - textPainter.width / 2,
-                  _offset[0]!.dy - textPainter.height / 2);
+              ? Offset(size.width / 2 - textPainter.width / 2, size.height / 2 - textPainter.height / 2)
+              : Offset(_offset[0]!.dx - textPainter.width / 2, _offset[0]!.dy - textPainter.height / 2);
           textPainter.paint(canvas, textOffset);
           break;
         default:
@@ -115,8 +124,7 @@ class DrawImage extends CustomPainter {
           break;
         case PaintMode.circle:
           final path = Path();
-          path.addOval(Rect.fromCircle(
-              center: _end!, radius: (_end - _start!).distance));
+          path.addOval(Rect.fromCircle(center: _end!, radius: (_end - _start!).distance));
           canvas.drawPath(path, _paint);
           break;
         case PaintMode.arrow:
@@ -132,20 +140,17 @@ class DrawImage extends CustomPainter {
           final points = _controller.offsets;
           for (int i = 0; i < _controller.offsets.length - 1; i++) {
             if (points[i] != null && points[i + 1] != null) {
-              canvas.drawLine(
-                  Offset(points[i]!.dx, points[i]!.dy),
-                  Offset(points[i + 1]!.dx, points[i + 1]!.dy),
+              canvas.drawLine(Offset(points[i]!.dx, points[i]!.dy), Offset(points[i + 1]!.dx, points[i + 1]!.dy),
                   _paint..strokeCap = StrokeCap.round);
             } else if (points[i] != null && points[i + 1] == null) {
-              canvas.drawPoints(PointMode.points,
-                  [Offset(points[i]!.dx, points[i]!.dy)], _paint);
+              canvas.drawPoints(PointMode.points, [Offset(points[i]!.dx, points[i]!.dy)], _paint);
             }
           }
           break;
         default:
       }
     }
-
+    canvas.restore();
     ///Draws all the completed actions of painting on the canvas.
   }
 
@@ -220,7 +225,14 @@ enum PaintMode {
   circle,
 
   ///Allows to draw dashed line between two point.
-  dashLine
+  dashLine,
+
+  ///ROTATE
+  rotate,
+
+  ///FLIP
+  flip,
+
 }
 
 ///[PaintInfo] keeps track of a single unit of shape, whichever selected.

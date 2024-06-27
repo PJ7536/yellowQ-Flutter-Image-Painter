@@ -9,8 +9,7 @@ class ExampleApp extends StatelessWidget {
     return MaterialApp(
       title: 'Image Painter Example',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        brightness: Brightness.dark
       ),
       home: ImagePainterExample(),
     );

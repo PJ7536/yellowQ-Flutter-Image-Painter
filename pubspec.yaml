@@ -11,3 +11,5 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  reflexis_ui:
+    path:  ../ztmf-ui-component

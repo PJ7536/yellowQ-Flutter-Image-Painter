@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:reflexis_ui/reflexis_ui.dart';
+
 
 import '../../image_painter.dart';
 
@@ -32,7 +34,7 @@ class SelectionItems extends StatelessWidget {
             data.icon,
             color: isSelected
                 ? selectedColor ?? Colors.white
-                : unselectedColor ?? Colors.black,
+                : Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
         title: Text(
@@ -53,7 +55,7 @@ class SelectionItems extends StatelessWidget {
 
 List<ModeData> paintModes(TextDelegate textDelegate) => [
       ModeData(
-          icon: Icons.zoom_out_map,
+          icon: ZdsIcons.search,
           mode: PaintMode.none,
           label: textDelegate.noneZoom),
       ModeData(
@@ -61,15 +63,15 @@ List<ModeData> paintModes(TextDelegate textDelegate) => [
           mode: PaintMode.line,
           label: textDelegate.line),
       ModeData(
-          icon: Icons.crop_free,
+          icon: Icons.rectangle_outlined,
           mode: PaintMode.rect,
           label: textDelegate.rectangle),
       ModeData(
-          icon: Icons.edit,
+          icon: ZdsIcons.edit,
           mode: PaintMode.freeStyle,
           label: textDelegate.drawing),
       ModeData(
-          icon: Icons.lens_outlined,
+          icon: Icons.circle_outlined,
           mode: PaintMode.circle,
           label: textDelegate.circle),
       ModeData(
@@ -77,11 +79,11 @@ List<ModeData> paintModes(TextDelegate textDelegate) => [
           mode: PaintMode.arrow,
           label: textDelegate.arrow),
       ModeData(
-          icon: Icons.power_input,
+          icon: Icons.more_horiz_sharp,
           mode: PaintMode.dashLine,
           label: textDelegate.dashLine),
       ModeData(
-          icon: Icons.text_format,
+          icon: Icons.text_fields_outlined,
           mode: PaintMode.text,
           label: textDelegate.text),
     ];
