@@ -12,4 +12,6 @@ dependencies:
   flutter:
     sdk: flutter
   reflexis_ui:
-    path:  ../ztmf-ui-component
+    git:
+      url: git@github.com:zebratechnologies/ztmf-ui-component.git
+      ref: master
